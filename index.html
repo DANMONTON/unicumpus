@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uni Market places</title>
+  <meta name="description" content="Buy, sell and swap with students on campus.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f9d6b">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+
+<header class="topbar">
+
+  <a class="brand" href="index.html">
+  <img src="img/app-store.png" alt="" style="width:28px;vertical-align:middle;"> UniCampus<span>Market Place</span></a>
+  <nav>
+    <button id="btnMine" class="btn ghost hidden" type="button">My listings</button>
+    <button id="btnOrders" class="btn ghost hidden" type="button">Orders</button>
+    <button id="btnProfile" class="btn ghost hidden" type="button">Profile</button>
+    <a id="btnAdmin" class="btn ghost hidden" href="admin.html">Admin</a>
+    <button id="btnPost" class="btn primary" type="button">+ Sell</button>
+    <button id="btnSignup" class="btn" type="button">Sign up</button>
+    <button id="btnAuth" class="btn" type="button">Log in</button>
+  </nav>
+</header>
+
+<section class="hero">
+<h1 class="land" style="font-family:'Black Ops One',Impact,sans-serif;">The Land Of Trade</h1>
+  <h3>Buy, sell and swap Gods on campus</h3>
+  <p>Books, electronics, room items and many more, from students you can actually meet.</p>
+</section>
+
+<div id="feeBanner" class="banner"></div>
+
+<main class="wrap">
+  <div class="filters">
+    <input id="fSearch" type="search" placeholder="Search items..." aria-label="Search items" maxlength="60">
+    <select id="fCategory" aria-label="Category"></select>
+    <select id="fSort" aria-label="Sort">
+      <option value="new">Newest</option>
+      <option value="low">Price: low to high</option>
+      <option value="high">Price: high to low</option>
+    </select>
+  </div>
+
+  <h2 id="listTitle" class="section-title">Latest listings</h2>
+  <div id="grid" class="grid" aria-live="polite"></div>
+  <p id="empty" class="empty hidden">Nothing here yet. Be the first to post an item!</p>
+</main>
+
+<footer class="footer">
+  <p>Meet in a public place on campus. Never pay before you see the item. Report anything suspicious.</p>
+</footer>
+
+<!-- Login / Sign up -->
+<dialog id="authDialog">
+  <form id="authForm" class="form" autocomplete="on">
+    <div class="dlg-head">
+      <h3 id="authTitle">Log in</h3>
+      <button type="button" class="x" data-close aria-label="Close">&times;</button>
+    </div>
+    <label id="nameRow" class="hidden">Full name
+      <input id="authName" type="text" maxlength="60" autocomplete="name">
+    </label>
+    <label>Email
+      <input id="authEmail" type="email" required autocomplete="email">
+    </label>
+    <label>Password
+      <input id="authPass" type="password" required minlength="8" autocomplete="current-password">
+    </label>
+    <button id="authSubmit" class="btn primary block" type="submit">Log in</button>
+    <p class="muted center"><span id="authSwitchText">New here?</span>
+      <button id="authSwitch" type="button" class="linkbtn">Create an account</button></p>
+  </form>
+</dialog>
+
+<!-- Post a listing -->
+<dialog id="postDialog">
+  <form id="postForm" class="form">
+    <div class="dlg-head">
+      <h3>Sell an item</h3>
+      <button type="button" class="x" data-close aria-label="Close">&times;</button>
+    </div>
+    <label>Title
+      <input id="pTitle" type="text" required minlength="3" maxlength="100" placeholder="e.g. Calculus textbook, 3rd edition">
+    </label>
+    <div class="row">
+      <label>Category
+        <select id="pCategory" required></select>
+      </label>
+      <label>Condition
+        <select id="pCondition" required></select>
+      </label>
+    </div>
+    <label>Price
+      <input id="pPrice" type="number" required min="0" step="0.01" inputmode="decimal">
+    </label>
+    <label>Description <span class="muted">(optional)</span>
+      <textarea id="pDesc" maxlength="1000" rows="3" placeholder="Details, where to meet, etc."></textarea>
+    </label>
+    <label>Contact (WhatsApp / phone, with country code)
+      <input id="pContact" type="text" required minlength="5" maxlength="120" placeholder="e.g. 265991234567">
+    </label>
+    <label>Photo <span class="muted">(JPG, PNG or WebP, max 5 MB)</span>
+      <input id="pImage" type="file" accept="image/jpeg,image/png,image/webp">
+    </label>
+    <button id="postSubmit" class="btn primary block" type="submit">Post listing</button>
+  </form>
+</dialog>
+
+<!-- Listing details -->
+<dialog id="detailDialog">
+  <div id="detailBody" class="detail"></div>
+</dialog>
+
+<!-- My profile -->
+<dialog id="profileDialog">
+  <form id="profileForm" class="form">
+    <div class="dlg-head">
+      <h3>My profile</h3>
+      <button type="button" class="x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div id="prAvatar" class="center"></div>
+    <label>Profile picture <span class="muted">(JPG, PNG or WebP, max 2 MB)</span>
+      <input id="prFile" type="file" accept="image/jpeg,image/png,image/webp">
+    </label>
+    <label>User name
+      <input id="prName" type="text" required maxlength="60">
+    </label>
+    <label>Business name <span class="muted">(optional)</span>
+      <input id="prBiz" type="text" maxlength="80">
+    </label>
+    <label>Location <span class="muted">(hostel or campus area)</span>
+      <input id="prLoc" type="text" maxlength="80">
+    </label>
+    <button id="prSubmit" class="btn primary block" type="submit">Save profile</button>
+  </form>
+</dialog>
+
+<!-- Buy with escrow -->
+<dialog id="buyDialog">
+  <form id="buyForm" class="form">
+    <div class="dlg-head">
+      <h3>Buy securely</h3>
+      <button type="button" class="x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div id="buyInfo"></div>
+    <label>Pay with
+      <select id="buyMethod">
+        <option value="airtel">Airtel Money</option>
+        <option value="tnm">TNM Mpamba</option>
+      </select>
+    </label>
+    <button id="buySubmit" class="btn primary block" type="submit">Create order</button>
+  </form>
+</dialog>
+
+<!-- My orders -->
+<dialog id="ordersDialog">
+  <div class="form">
+    <div class="dlg-head">
+      <h3>My orders</h3>
+      <button type="button" class="x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div id="ordersList"></div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status"></div>
+
+<footer>
+<div class="foot">
+<p class="pp"> @2026 UniCumpus Desighned By <a href="">PRODOT TECHGENIUS</a> </p>
+</div>
+</footer>
+
+<style>
+.foot{
+margin-top:8%;
+background-color:grey;
+
+}
+.pp{
+margin-left:40%;
+font-family:IMPACT;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>
