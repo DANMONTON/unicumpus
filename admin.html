@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · Campus Market</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" >Campus<span>Market</span> admin</a>
+  <nav><a class="btn" href="index.html">Back to site</a></nav>
+</header>
+<main class="wrap">
+  <p id="gate" class="muted">Checking access...</p>
+  <div id="app" class="hidden">
+    <div class="tabs">
+      <button class="btn on" data-tab="orders" type="button">Payments</button>
+      <button class="btn" data-tab="reports" type="button">Reports</button>
+      <button class="btn" data-tab="settings" type="button">Settings</button>
+    </div>
+    <section id="tab-orders">
+      <div id="stats" class="stats"></div>
+      <select id="statusFilter" aria-label="Filter orders">
+        <option value="">Needs attention</option>
+        <option value="all">All orders</option>
+        <option value="payment_submitted">Payment to verify</option>
+        <option value="held">Held</option>
+        <option value="confirmed">Confirmed, waiting to release</option>
+        <option value="disputed">Disputed</option>
+        <option value="released">Released</option>
+        <option value="refunded">Refunded</option>
+      </select>
+      <div id="orders" style="margin-top:12px"></div>
+    </section>
+    <section id="tab-reports" class="hidden"><div id="reports"></div></section>
+    <section id="tab-settings" class="hidden">
+      <form id="settingsForm" class="panel form-grid"></form>
+    </section>
+  </div>
+</main>
+<div id="toast" class="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
