@@ -238,6 +238,22 @@
     if (!user) {
       actions.innerHTML = '<button class="btn primary" type="button" id="dLogin">Log in to see seller contact</button>';
       $("dLogin").addEventListener("click", () => { $("detailDialog").close(); openAuth("login"); });
+    } else if (l.kind !== "want" && !mine) {
+      // Seller contact is only released after the buyer's payment is secured (enforced in the database too).
+      const note = document.createElement("div");
+      note.className = "muted center";
+      note.textContent = "For your safety, the seller's contact is shared once your payment is secured. Use Buy securely, or ask admin first.";
+      actions.appendChild(note);
+      const wa = (settings.admin_whatsapp || "").replace(/\D/g, "");
+      if (wa.length >= 9) {
+        const a = document.createElement("a");
+        a.className = "btn";
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.href = `https://wa.me/${wa}?text=${encodeURIComponent(`Hi admin, I have a question about "${l.title}" on Campus Market.`)}`;
+        a.textContent = "Ask admin on WhatsApp";
+        actions.appendChild(a);
+      }
     } else {
       const { data } = await db.from("contacts").select("contact").eq("listing_id", l.id).maybeSingle();
       const contact = data?.contact || "";
@@ -569,6 +585,7 @@
       e.preventDefault();
       const body = $("commentText").value.trim();
       if (!body) return;
+      if (/\d[\d\s().-]{7,}\d/.test(body)) return toast("Please don't share phone numbers here. Contact is shared after payment is secured.");
       const { error } = await db.from("comments").insert({ listing_id: l.id, body });
       if (error) return toast("Could not post comment");
       $("commentText").value = "";
@@ -629,7 +646,24 @@
     const { data, error } = await db.from("orders").select("*")
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order("created_at", { ascending: false });
     if (error) { box.textContent = "Could not load orders"; return; }
+    orderRows = data;
     box.innerHTML = data.length ? data.map(orderHTML).join("") : '<p class="muted center">No orders yet.</p>';
+  }
+
+  // Order chat: buyer, seller and admin. Messages are permanent and visible to admin as evidence.
+  let orderRows = [];
+  async function loadThread(card) {
+    const id = card.dataset.id, box = card.querySelector(".thread");
+    const o = orderRows.find((x) => x.id === id);
+    const { data, error } = await db.from("order_messages").select("*").eq("order_id", id).order("created_at");
+    if (error) { box.textContent = "Could not load messages"; return; }
+    await loadProfiles(data.map((m) => m.sender_id));
+    const who = (m) => m.sender_id === user.id ? "You"
+      : (m.sender_id === o.buyer_id || m.sender_id === o.seller_id) ? (profiles[m.sender_id]?.user_name || "Student") : "Admin";
+    box.innerHTML = (data.length
+      ? data.map((m) => `<div class="msg"><b>${esc(who(m))}</b> <span class="muted">${esc(new Date(m.created_at).toLocaleString())}</span><div class="ctext">${esc(m.body)}</div></div>`).join("")
+      : '<div class="muted">No messages yet. Ask a question or explain a problem. Admin can read this chat.</div>') +
+      '<div class="cform"><input data-f="msg" maxlength="1000" placeholder="Write a message..."><button class="btn primary" type="button" data-act="send">Send</button></div>';
   }
 
   function orderHTML(o) {
@@ -667,7 +701,9 @@
     return `<div class="order" data-id="${esc(o.id)}">
       <div class="order-head"><b>${esc(o.listing_title)}</b><span class="chip">${esc(STATUS[o.status])}</span></div>
       <div class="muted">${buyer ? "Buying" : "Selling"} · ${esc(money(o.amount))}${buyer ? "" : ` · you receive ${esc(money(o.seller_payout))}${fee}`}</div>
-      <div class="order-body">${body}</div></div>`;
+      <div class="order-body">${body}</div>
+      <div class="order-tools">${buyer && ["held", "confirmed", "released", "disputed"].includes(o.status) ? '<button class="btn" type="button" data-act="contact">Seller contact</button> ' : ""}<button class="btn" type="button" data-act="chat">Messages</button></div>
+      <div class="thread hidden"></div></div>`;
   }
 
   $("ordersList").addEventListener("click", async (e) => {
@@ -675,6 +711,33 @@
     if (!act) return;
     const card = e.target.closest(".order");
     const id = card.dataset.id;
+    if (act === "chat") {
+      const th = card.querySelector(".thread");
+      th.classList.toggle("hidden");
+      if (!th.classList.contains("hidden")) loadThread(card);
+      return;
+    }
+    if (act === "send") {
+      const inp = card.querySelector("[data-f=msg]");
+      const body = inp.value.trim();
+      if (!body) return;
+      const { error } = await db.from("order_messages").insert({ order_id: id, body });
+      if (error) return toast("Could not send: " + error.message);
+      loadThread(card);
+      return;
+    }
+    if (act === "contact") {
+      const o = orderRows.find((x) => x.id === id);
+      if (!o?.listing_id) return toast("Listing no longer exists");
+      const { data } = await db.from("contacts").select("contact").eq("listing_id", o.listing_id).maybeSingle();
+      const c = data?.contact;
+      if (!c) return toast("Contact not available yet");
+      const digits = c.replace(/\D/g, "");
+      const link = digits.length >= 9 ? ` · <a href="https://wa.me/${digits}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : "";
+      card.querySelector(".order-body").insertAdjacentHTML("beforeend", `<div>Seller contact: <b>${esc(c)}</b>${link}</div>`);
+      e.target.remove();
+      return;
+    }
     let r;
     if (act === "pay") {
       const phone = card.querySelector("[data-f=phone]").value.trim();
@@ -693,8 +756,20 @@
     loadListings();
   });
 
+  // ---------- visit counter (anonymous: random id per browser, no IP stored) ----------
+  function trackVisit() {
+    try {
+      if (sessionStorage.getItem("visit_logged")) return;
+      sessionStorage.setItem("visit_logged", "1");
+      let vid = localStorage.getItem("visitor_id");
+      if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("visitor_id", vid); }
+      db.from("site_visits").insert({ visitor: vid, path: location.pathname.slice(0, 200) }).then(() => {}, () => {});
+    } catch {}
+  }
+
   // ---------- start ----------
   async function init() {
+    trackVisit();
     fillSelect($("fCategory"), CATEGORIES, true);
     fillSelect($("fSchool"), CONFIG.SCHOOLS || [], "All campuses");
     fillSelect($("authSchool"), CONFIG.SCHOOLS || [], "Choose your school...");

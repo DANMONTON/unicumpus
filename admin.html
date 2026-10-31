@@ -18,10 +18,12 @@
     <div class="tabs">
       <button class="btn on" data-tab="orders" type="button">Payments</button>
       <button class="btn" data-tab="reports" type="button">Reports</button>
+      <button class="btn" data-tab="users" type="button">Users &amp; traffic</button>
       <button class="btn" data-tab="settings" type="button">Settings</button>
     </div>
     <section id="tab-orders">
       <div id="stats" class="stats"></div>
+      <p><button id="exportCsv" class="btn" type="button">Download all orders (CSV)</button></p>
       <select id="statusFilter" aria-label="Filter orders">
         <option value="">Needs attention</option>
         <option value="all">All orders</option>
@@ -35,6 +37,24 @@
       <div id="orders" style="margin-top:12px"></div>
     </section>
     <section id="tab-reports" class="hidden"><div id="reports"></div></section>
+    <section id="tab-users" class="hidden">
+      <div class="btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <select id="range" aria-label="Date range" style="width:auto">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+        <button id="exportUsers" class="btn" type="button">Download users (CSV)</button>
+      </div>
+      <div id="uStats" class="stats"></div>
+      <div class="panel"><h3 style="margin:0">Visits</h3><div id="chartVisits"></div></div>
+      <div class="panel"><h3 style="margin:0">New accounts</h3><div id="chartSignups"></div></div>
+      <div class="panel">
+        <h3 style="margin:0">Registered users <span id="uCount" class="muted"></span></h3>
+        <input id="uSearch" type="search" placeholder="Search name, email or school..." maxlength="60">
+        <div class="tablewrap"><table class="tbl" id="uTable"></table></div>
+      </div>
+    </section>
     <section id="tab-settings" class="hidden">
       <form id="settingsForm" class="panel form-grid"></form>
     </section>

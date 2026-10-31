@@ -168,3 +168,14 @@ dialog::backdrop { background: rgba(15, 23, 42, .55); }
 .kind-tabs { display: flex; gap: 8px; margin: 0 0 12px; flex-wrap: wrap; }
 .kind-tabs .btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .badge.want { background: #2563eb; }
+
+/* ---- v5: order chat + evidence ---- */
+.order-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.order-tools .btn { padding: 6px 12px; font-size: .85rem; }
+.thread { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.msg { background: #f3f4f6; border-radius: 10px; padding: 8px 10px; }
+
+/* ---- v6: users table ---- */
+.tablewrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.tbl th, .tbl td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
