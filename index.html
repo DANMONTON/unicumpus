@@ -14,14 +14,17 @@
 
 <header class="topbar">
 
-  <a class="brand" href="index.html">
-  <img src="img/app-store.png" alt="" style="width:28px;vertical-align:middle;"> UniCampus<span>Market Place</span></a>
+  <div class="topleft">
+    <div id="whoami" class="whoami" role="button" tabindex="0" title="Account"></div>
+    <a class="brand" href="index.html">
+    <img src="img/app-store.png" alt="" style="width:28px;vertical-align:middle;"> UniCampus<span>Market Place</span></a>
+  </div>
   <nav>
     <button id="btnMine" class="btn ghost hidden" type="button">My listings</button>
     <button id="btnOrders" class="btn ghost hidden" type="button">Orders</button>
     <button id="btnProfile" class="btn ghost hidden" type="button">Profile</button>
     <a id="btnAdmin" class="btn ghost hidden" href="admin.html">Admin</a>
-    <button id="btnPost" class="btn primary" type="button">+ Sell</button>
+    <button id="btnPost" class="btn primary" type="button">+ Post</button>
     <button id="btnSignup" class="btn" type="button">Sign up</button>
     <button id="btnAuth" class="btn" type="button">Log in</button>
   </nav>
@@ -38,6 +41,7 @@
 <main class="wrap">
   <div class="filters">
     <input id="fSearch" type="search" placeholder="Search items..." aria-label="Search items" maxlength="60">
+    <select id="fSchool" aria-label="School"></select>
     <select id="fCategory" aria-label="Category"></select>
     <select id="fSort" aria-label="Sort">
       <option value="new">Newest</option>
@@ -46,6 +50,10 @@
     </select>
   </div>
 
+  <div id="kindTabs" class="kind-tabs">
+    <button class="btn on" data-kind="sell" type="button">For sale</button>
+    <button class="btn" data-kind="want" type="button">I want (requests)</button>
+  </div>
   <h2 id="listTitle" class="section-title">Latest listings</h2>
   <div id="grid" class="grid" aria-live="polite"></div>
   <p id="empty" class="empty hidden">Nothing here yet. Be the first to post an item!</p>
@@ -65,6 +73,9 @@
     <label id="nameRow" class="hidden">Full name
       <input id="authName" type="text" maxlength="60" autocomplete="name">
     </label>
+    <label id="schoolRow" class="hidden">Your school
+      <select id="authSchool"></select>
+    </label>
     <label>Email
       <input id="authEmail" type="email" required autocomplete="email">
     </label>
@@ -81,9 +92,12 @@
 <dialog id="postDialog">
   <form id="postForm" class="form">
     <div class="dlg-head">
-      <h3>Sell an item</h3>
+      <h3 id="postTitle">Sell an item</h3>
       <button type="button" class="x" data-close aria-label="Close">&times;</button>
     </div>
+    <label>What are you posting?
+      <select id="pKind"><option value="sell">I am selling an item</option><option value="want">I want an item (request)</option></select>
+    </label>
     <label>Title
       <input id="pTitle" type="text" required minlength="3" maxlength="100" placeholder="e.g. Calculus textbook, 3rd edition">
     </label>
@@ -95,7 +109,7 @@
         <select id="pCondition" required></select>
       </label>
     </div>
-    <label>Price
+    <label><span id="pPriceLabel">Price</span>
       <input id="pPrice" type="number" required min="0" step="0.01" inputmode="decimal">
     </label>
     <label>Description <span class="muted">(optional)</span>
@@ -129,6 +143,9 @@
     </label>
     <label>User name
       <input id="prName" type="text" required maxlength="60">
+    </label>
+    <label>School
+      <select id="prSchool"></select>
     </label>
     <label>Business name <span class="muted">(optional)</span>
       <input id="prBiz" type="text" maxlength="80">

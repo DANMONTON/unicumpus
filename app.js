@@ -1,7 +1,10 @@
 (() => {
   "use strict";
 
-  const db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  // persistSession keeps the login after the page is closed or refreshed.
+  const db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  });
   const $ = (id) => document.getElementById(id);
 
   const CATEGORIES = ["Books & Notes", "Electronics", "Clothing & Shoes", "Furniture & Room", "Kitchen & Appliances", "Services", "Other"];
@@ -13,6 +16,8 @@
 
   let user = null;
   let mineOnly = false;
+  let kind = "sell"; // "sell" = items for sale, "want" = "I want" requests
+  try { kind = localStorage.getItem("kind") === "want" ? "want" : "sell"; } catch {}
   let authMode = "login";
   let listings = [];
   let isAdmin = false;
@@ -24,6 +29,7 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const money = (n) => `${CONFIG.CURRENCY}${Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const priceText = (l) => (l.kind === "want" ? (Number(l.price) > 0 ? "Budget " + money(l.price) : "Wanted") : money(l.price));
   const safeImg = (u) => (typeof u === "string" && u.startsWith("https://") ? u : null);
 
   let toastTimer;
@@ -36,7 +42,7 @@
   }
 
   function fillSelect(sel, items, withAll) {
-    sel.innerHTML = (withAll ? '<option value="">All categories</option>' : "") +
+    sel.innerHTML = (withAll ? `<option value="">${esc(typeof withAll === "string" ? withAll : "All categories")}</option>` : "") +
       items.map((i) => `<option value="${esc(i)}">${esc(i)}</option>`).join("");
   }
 
@@ -51,6 +57,16 @@
     for (const id of ["btnMine", "btnOrders", "btnProfile"]) $(id).classList.toggle("hidden", !user);
     $("btnAdmin").classList.toggle("hidden", !isAdmin);
     $("btnSignup").classList.toggle("hidden", !!user);
+    // Who is logged in: top-left corner
+    const w = $("whoami");
+    if (user) {
+      const nm = profiles[user.id]?.user_name || user.user_metadata?.full_name || (user.email || "").split("@")[0] || "Student";
+      w.innerHTML = `${avatarHTML(profiles[user.id] || { user_name: nm }, "av sm")}<span class="who-txt"><b>${esc(nm)}</b><small>Logged in</small></span>`;
+      w.classList.add("in");
+    } else {
+      w.innerHTML = '<span class="av sm ph">?</span><span class="who-txt"><b>Guest</b><small>Not logged in · tap to log in</small></span>';
+      w.classList.remove("in");
+    }
   }
 
   function setAuthMode(mode) {
@@ -59,6 +75,7 @@
     $("authTitle").textContent = signup ? "Create account" : "Log in";
     $("authSubmit").textContent = signup ? "Sign up" : "Log in";
     $("nameRow").classList.toggle("hidden", !signup);
+    $("schoolRow").classList.toggle("hidden", !signup);
     $("authSwitchText").textContent = signup ? "Already have an account?" : "New here?";
     $("authSwitch").textContent = signup ? "Log in" : "Create an account";
     $("authPass").autocomplete = signup ? "new-password" : "current-password";
@@ -72,12 +89,14 @@
   $("btnAuth").addEventListener("click", async () => {
     if (user) {
       await db.auth.signOut();
+      clearDraft();
       toast("Logged out");
     } else {
       openAuth("login");
     }
   });
   $("btnSignup").addEventListener("click", () => openAuth("signup"));
+  $("whoami").addEventListener("click", () => (user ? $("btnProfile").click() : openAuth("login")));
   $("authSwitch").addEventListener("click", () => setAuthMode(authMode === "login" ? "signup" : "login"));
 
   $("authForm").addEventListener("submit", async (e) => {
@@ -96,7 +115,10 @@
       if (authMode === "signup") {
         const name = $("authName").value.trim();
         if (!name) return toast("Please enter your name");
-        const options = { data: { full_name: name } };
+        const school = $("authSchool").value;
+        if (!school) return toast("Please choose your school");
+        const options = { data: { full_name: name, school } };
+        try { localStorage.setItem("school", school); } catch {}
         if (location.protocol.startsWith("http")) options.emailRedirectTo = location.origin + location.pathname;
         const { data, error } = await db.auth.signUp({ email, password, options });
         if (error) return toast(error.message);
@@ -126,7 +148,9 @@
 
     let q = db.from("listings").select("*").limit(80);
     if (mineOnly && user) q = q.eq("seller_id", user.id);
-    else q = q.eq("status", "available");
+    else q = q.eq("status", "available").eq("kind", kind);
+    const school = $("fSchool").value;
+    if (school && !mineOnly) q = q.eq("school", school);
     if (cat) q = q.eq("category", cat);
     if (term) q = q.ilike("title", `%${term}%`);
     if (sort === "low") q = q.order("price", { ascending: true });
@@ -144,12 +168,12 @@
   }
 
   function renderGrid() {
-    $("listTitle").textContent = mineOnly ? "My listings" : "Latest listings";
+    $("listTitle").textContent = mineOnly ? "My listings" : kind === "want" ? "What students want" : "Latest listings";
     $("btnMine").textContent = mineOnly ? "All listings" : "My listings";
     $("empty").classList.toggle("hidden", listings.length > 0);
     $("empty").textContent = mineOnly
       ? "You haven't posted anything yet."
-      : "Nothing here yet. Be the first to post an item!";
+      : kind === "want" ? "No requests yet. Post what you want!" : "Nothing here yet. Be the first to post an item!";
 
     $("grid").innerHTML = listings.map((l) => {
       const img = safeImg(l.image_url);
@@ -157,10 +181,10 @@
         <button class="card" type="button" data-id="${esc(l.id)}">
           <div class="thumb">
             ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : esc(ICONS[l.category] || "📦")}
-            ${l.status !== "available" ? `<span class="badge">${esc(l.status.toUpperCase())}</span>` : ""}
+            ${l.kind === "want" ? '<span class="badge want">I WANT</span>' : l.status !== "available" ? `<span class="badge">${esc(l.status.toUpperCase())}</span>` : ""}
           </div>
           <div class="card-body">
-            <div class="price">${esc(money(l.price))}</div>
+            <div class="price">${esc(priceText(l))}</div>
             <div class="card-title">${esc(l.title)}</div>
             <div class="meta">${esc(l.condition)} · ${esc(l.category)}</div>
             <div class="seller-mini">${avatarHTML(profiles[l.seller_id] || { user_name: l.seller_name }, "av sm")}<span>${esc(profiles[l.seller_id]?.user_name || l.seller_name)}</span></div>
@@ -188,7 +212,7 @@
         <div class="close-row"><button class="x" type="button" data-close aria-label="Close">&times;</button></div>
       </div>
       <div class="content">
-        <div class="price">${esc(money(l.price))}${l.status === "sold" ? " · SOLD" : ""}</div>
+        <div class="price">${esc(priceText(l))}${l.status === "sold" ? (l.kind === "want" ? " · FOUND" : " · SOLD") : ""}</div>
         <h3>${esc(l.title)}</h3>
         <div class="chips">
           <span class="chip">${esc(l.category)}</span>
@@ -219,13 +243,15 @@
       const contact = data?.contact || "";
       const digits = contact.replace(/\D/g, "");
       if (digits.length >= 9) {
-        const msg = encodeURIComponent(`Hi, I saw "${l.title}" on Campus Market. Is it still available?`);
+        const msg = encodeURIComponent(l.kind === "want"
+          ? `Hi, I saw your request for "${l.title}" on Campus Market. I have one for you.`
+          : `Hi, I saw "${l.title}" on Campus Market. Is it still available?`);
         const a = document.createElement("a");
         a.className = "btn primary";
         a.target = "_blank";
         a.rel = "noopener noreferrer";
         a.href = `https://wa.me/${digits}?text=${msg}`;
-        a.textContent = "Chat on WhatsApp";
+        a.textContent = l.kind === "want" ? "I have this · WhatsApp" : "Chat on WhatsApp";
         actions.appendChild(a);
       }
       const p = document.createElement("div");
@@ -237,7 +263,7 @@
     if (mine) {
       if (l.status === "available") {
         const b = document.createElement("button");
-        b.className = "btn"; b.type = "button"; b.textContent = "Mark as sold";
+        b.className = "btn"; b.type = "button"; b.textContent = l.kind === "want" ? "Mark as found" : "Mark as sold";
         b.addEventListener("click", () => markSold(l));
         actions.appendChild(b);
       }
@@ -252,7 +278,7 @@
       actions.appendChild(r);
     }
 
-    if (user && !mine && l.status === "available") {
+    if (user && !mine && l.status === "available" && l.kind !== "want") {
       const b = document.createElement("button");
       b.className = "btn primary"; b.type = "button";
       b.textContent = `Buy securely · ${money(l.price)}`;
@@ -287,12 +313,48 @@
     toast(error ? "Could not send report" : "Thanks, we'll review it");
   }
 
+  // ---------- sell / "I want" tabs + saved draft ----------
+  const DRAFT_KEY = "postDraft";
+  const DRAFT_IDS = ["pKind", "pTitle", "pCategory", "pCondition", "pPrice", "pDesc", "pContact"];
+  function applyKind() {
+    const want = $("pKind").value === "want";
+    $("postTitle").textContent = want ? "I want an item" : "Sell an item";
+    $("pPriceLabel").textContent = want ? "Budget (optional, 0 = any price)" : "Price";
+    $("pPrice").required = !want;
+    $("postSubmit").textContent = want ? "Post request" : "Post listing";
+  }
+  function saveDraft() {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(Object.fromEntries(DRAFT_IDS.map((i) => [i, $(i).value])))); } catch {}
+  }
+  function restoreDraft() {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch {}
+    if (d) DRAFT_IDS.forEach((i) => { if (d[i] != null) $(i).value = d[i]; });
+    else $("pKind").value = kind;
+    applyKind();
+  }
+  function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+  $("postForm").addEventListener("input", () => { applyKind(); saveDraft(); });
+  function syncTabs() {
+    document.querySelectorAll("#kindTabs .btn").forEach((b) => b.classList.toggle("on", b.dataset.kind === kind));
+  }
+  $("kindTabs").addEventListener("click", (e) => {
+    const k = e.target.dataset.kind;
+    if (!k) return;
+    kind = k;
+    try { localStorage.setItem("kind", k); } catch {}
+    mineOnly = false;
+    syncTabs();
+    loadListings();
+  });
+
   // ---------- post a listing ----------
   $("btnPost").addEventListener("click", () => {
     if (!user) {
       toast("Log in to post an item");
       return openAuth("login");
     }
+    restoreDraft();
     $("postDialog").showModal();
   });
 
@@ -322,7 +384,8 @@
       const row = {
         title: $("pTitle").value.trim(),
         description: $("pDesc").value.trim() || null,
-        price: Number($("pPrice").value),
+        price: Number($("pPrice").value) || 0,
+        kind: $("pKind").value === "want" ? "want" : "sell",
         category: $("pCategory").value,
         condition: $("pCondition").value,
         seller_name: (user.user_metadata?.full_name || "Student").slice(0, 60),
@@ -333,16 +396,20 @@
       const { data, error } = await db.from("listings").insert(row).select("id").single();
       if (error) {
         if (imagePath) await db.storage.from("listing-images").remove([imagePath]);
-        return toast("Could not post listing");
+        return toast("Could not post listing: " + error.message);
       }
 
       const c = await db.from("contacts").insert({ listing_id: data.id, contact: $("pContact").value.trim() });
       if (c.error) {
         await db.from("listings").delete().eq("id", data.id);
         if (imagePath) await db.storage.from("listing-images").remove([imagePath]);
-        return toast("Could not save contact details");
+        return toast("Could not save contact details: " + c.error.message);
       }
 
+      kind = row.kind;
+      try { localStorage.setItem("kind", kind); } catch {}
+      clearDraft();
+      syncTabs();
       $("postForm").reset();
       $("postDialog").close();
       toast("Your item is live!");
@@ -365,6 +432,22 @@
     searchTimer = setTimeout(loadListings, 300);
   });
   $("fCategory").addEventListener("change", loadListings);
+  $("fSchool").addEventListener("change", () => {
+    try { localStorage.setItem("school", $("fSchool").value); } catch {}
+    loadListings();
+  });
+
+  // Show the student's own campus by default (they can switch to "All campuses").
+  async function applyDefaultSchool() {
+    let s = "";
+    try { s = localStorage.getItem("school") || ""; } catch {}
+    if (user) {
+      delete profiles[user.id];
+      await loadProfiles([user.id]);
+      s = profiles[user.id]?.school || user.user_metadata?.school || s;
+    }
+    if (s && (CONFIG.SCHOOLS || []).includes(s)) $("fSchool").value = s;
+  }
   $("fSort").addEventListener("change", loadListings);
 
   // Close buttons + click on backdrop
@@ -413,6 +496,7 @@
     $("prName").value = p.user_name || "";
     $("prBiz").value = p.business_name || "";
     $("prLoc").value = p.location || "";
+    $("prSchool").value = p.school || "";
     $("prAvatar").innerHTML = avatarHTML(p, "av big");
     $("profileDialog").showModal();
   });
@@ -427,6 +511,7 @@
         user_name: $("prName").value.trim(),
         business_name: $("prBiz").value.trim() || null,
         location: $("prLoc").value.trim() || null,
+        school: $("prSchool").value || null,
         updated_at: new Date().toISOString(),
       };
       const file = $("prFile").files[0];
@@ -441,12 +526,13 @@
         upd.avatar_url = db.storage.from("avatars").getPublicUrl(path).data.publicUrl;
         if (old.avatar_path) await db.storage.from("avatars").remove([old.avatar_path]);
       }
-      const { error } = await db.from("profiles").update(upd).eq("id", user.id);
-      if (error) return toast("Could not save profile");
+      const { error } = await db.from("profiles").upsert({ id: user.id, ...upd });
+      if (error) return toast("Could not save profile: " + error.message);
       delete profiles[user.id];
       $("profileForm").reset();
       $("profileDialog").close();
       toast("Profile saved");
+      if (upd.school) $("fSchool").value = upd.school;
       loadListings();
       db.auth.updateUser({ data: { full_name: upd.user_name } });
     } finally {
@@ -610,6 +696,9 @@
   // ---------- start ----------
   async function init() {
     fillSelect($("fCategory"), CATEGORIES, true);
+    fillSelect($("fSchool"), CONFIG.SCHOOLS || [], "All campuses");
+    fillSelect($("authSchool"), CONFIG.SCHOOLS || [], "Choose your school...");
+    fillSelect($("prSchool"), CONFIG.SCHOOLS || [], "Choose your school...");
     fillSelect($("pCategory"), CATEGORIES, false);
     fillSelect($("pCondition"), CONDITIONS, false);
 
@@ -617,7 +706,9 @@
     user = data.session?.user ?? null;
     await db.rpc("expire_unpaid_orders");
     await Promise.all([loadSettings(), checkAdmin()]);
+    await applyDefaultSchool();
     renderAuthUI();
+    syncTabs();
     loadListings();
 
     db.auth.onAuthStateChange((event, session) => {
@@ -626,7 +717,7 @@
       if (!user) mineOnly = false;
       renderAuthUI();
       setTimeout(() => checkAdmin().then(renderAuthUI), 0);
-      loadListings();
+      setTimeout(() => applyDefaultSchool().then(() => { renderAuthUI(); loadListings(); }), 0);
     });
   }
 

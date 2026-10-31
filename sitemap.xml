@@ -2,17 +2,17 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://.netlify.app/</loc>
+    <loc>https://unicumpusmarketplace.netlify.app/</loc>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://.netlify.app/index.html</loc>
+    <loc>https://unicumpusmarketplace.netlify.app/index.html</loc>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://admin.html</loc>
+    <loc>https://unicumpusmarketplace.netlify.app/admin.html</loc>
     <priority>0.8</priority>
 
 </urlset>

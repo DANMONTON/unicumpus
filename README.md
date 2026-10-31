@@ -17,7 +17,7 @@ Stack: plain HTML/CSS/JS + Supabase (auth, database, image storage). No build st
 
 - Row-level security: students can only edit or delete their own listings.
 - Seller phone numbers are stored in a separate table that only logged-in users can read, so scrapers can't harvest them.
-- Image uploads are limited to JPG/PNG/WebP, 5 MB, inside the uploader's own folder.
+- Image uploads are limited to JPG/PNG/WebP, 10 MB, inside the uploader's own folder.
 - All listing text is escaped before display (prevents script injection / XSS).
 - Reports can be filed by users but only read by you in the Supabase dashboard (Table Editor -> reports).
 
