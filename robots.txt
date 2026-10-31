@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# Sitemap Location
-Sitemap: https://netlify.app
+Sitemap: https://unicumpusmarketplace.vercel.app/sitemap.xml
