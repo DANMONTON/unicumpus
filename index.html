@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Uni Market places</title>
+  <title>UnicumpusMarket place</title>
   <meta name="description" content="Buy, sell and swap with students on campus.">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
@@ -15,9 +15,11 @@
 <header class="topbar">
 
   <div class="topleft">
-    <div id="whoami" class="whoami" role="button" tabindex="0" title="Account"></div>
-    <a class="brand" href="index.html">
+   
     <img src="img/app-store.png" alt="" style="width:28px;vertical-align:middle;"> UniCampus<span>Market Place</span></a>
+     <div id="whoami" class="whoami" role="button" tabindex="0" title="Account">
+    </div>
+    <a class="brand" href="index.html">
   </div>
   <nav>
     <button id="btnMine" class="btn ghost hidden" type="button">My listings</button>
@@ -63,7 +65,7 @@
   <p>Meet in a public place on campus. Never pay before you see the item. Report anything suspicious.</p>
 </footer>
 
-<!-- Login / Sign up -->
+
 <dialog id="authDialog">
   <form id="authForm" class="form" autocomplete="on">
     <div class="dlg-head">
@@ -73,7 +75,7 @@
     <label id="nameRow" class="hidden">Full name
       <input id="authName" type="text" maxlength="60" autocomplete="name">
     </label>
-    <label id="schoolRow" class="hidden">Your school
+    <label id="schoolRow" class="hidden">Your school cumpus
       <select id="authSchool"></select>
     </label>
     <label>Email
@@ -88,7 +90,7 @@
   </form>
 </dialog>
 
-<!-- Post a listing -->
+
 <dialog id="postDialog">
   <form id="postForm" class="form">
     <div class="dlg-head">
@@ -116,7 +118,7 @@
       <textarea id="pDesc" maxlength="1000" rows="3" placeholder="Details, where to meet, etc."></textarea>
     </label>
     <label>Contact (WhatsApp / phone, with country code)
-      <input id="pContact" type="text" required minlength="5" maxlength="120" placeholder="e.g. 265991234567">
+      <input id="pContact" type="text" required minlength="5" maxlength="120" placeholder="e.g. +265 989130701">
     </label>
     <label>Photo <span class="muted">(JPG, PNG or WebP, max 5 MB)</span>
       <input id="pImage" type="file" accept="image/jpeg,image/png,image/webp">
@@ -138,7 +140,7 @@
       <button type="button" class="x" data-close aria-label="Close">&times;</button>
     </div>
     <div id="prAvatar" class="center"></div>
-    <label>Profile picture <span class="muted">(JPG, PNG or WebP, max 2 MB)</span>
+    <label>Profile picture <span class="muted">(JPG, PNG or WebP, max 5 MB)</span>
       <input id="prFile" type="file" accept="image/jpeg,image/png,image/webp">
     </label>
     <label>User name
@@ -190,19 +192,20 @@
 
 <footer>
 <div class="foot">
-<p class="pp"> @2026 UniCumpus Desighned By <a href="">PRODOT TECHGENIUS</a> </p>
+<p class="pp", style="font-family:Z003; font-style:italic;"> @2026 UniCumpus Money-Power-Respect <a href=""></a> </p>
 </div>
 </footer>
 
 <style>
 .foot{
 margin-top:8%;
-background-color:grey;
+background-color:white;
 
 }
 .pp{
-margin-left:40%;
+margin-left:35%;
 font-family:IMPACT;
+
 }
 </style>
 
